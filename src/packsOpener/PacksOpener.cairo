@@ -43,12 +43,12 @@ func initialize{
     syscall_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
     range_check_ptr
-  }(owner: felt):
+  }(owner: felt, _rules_tokens_address: felt):
   Ownable_initializer(owner)
   AccessControl_initializer(owner)
   Opener_initializer(owner)
 
-  PacksOpener.initializer(owner)
+  PacksOpener.initializer(owner, _rules_tokens_address)
   return ()
 end
 
@@ -124,6 +124,18 @@ func supportsInterface{
   return (success)
 end
 
+# Other contracts
+
+@view
+func rulesTokens{
+    syscall_ptr: felt*,
+    pedersen_ptr: HashBuiltin*,
+    range_check_ptr
+  }() -> (address: felt):
+  let (address) = PacksOpener.rules_tokens()
+  return (address)
+end
+
 #
 # Setters
 #
@@ -172,7 +184,7 @@ func takePackFrom{
     range_check_ptr
   }(packId: Uint256, _from: felt):
   Opener_only_opener()
-  PacksOpener.takePackFrom(packId, _from)
+  PacksOpener.take_pack_from(packId, _from)
   return ()
 end
 
@@ -183,7 +195,7 @@ func openPackTo{
     range_check_ptr
   }(packId: Uint256, to: felt):
   Opener_only_opener()
-  PacksOpener.openPackTo(packId, to)
+  PacksOpener.open_pack_to(packId, to)
   return ()
 end
 
@@ -204,7 +216,7 @@ func onERC1155Received{
     data_len: felt,
     data: felt*
   ) -> (selector: felt):
-  let (selector) = PacksOpener.onERC1155Received(
+  let (selector) = PacksOpener.on_ERC1155_received(
     operator,
     _from,
     id,
@@ -230,7 +242,7 @@ func onERC1155BatchReceived{
     data_len: felt,
     data: felt*
   ) -> (selector: felt):
-  let (selector) = PacksOpener.onERC1155BatchReceived(
+  let (selector) = PacksOpener.on_ERC1155_batch_received(
     operator,
     _from,
     ids_len,

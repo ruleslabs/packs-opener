@@ -18,6 +18,10 @@ from openzeppelin.introspection.ERC165 import (
 from ruleslabs.utils.constants import IERC1155_ACCEPTED_ID, IERC1155_RECEIVER_ID
 from periphery.proxy.library import Proxy
 
+# Interfaces
+
+from ruleslabs.contracts.RulesTokens.IRulesTokens import IRulesTokens
+
 #
 # Constants
 #
@@ -32,6 +36,18 @@ const VERSION = '0.1.0'
 func contract_initialized() -> (exists: felt):
 end
 
+# Other contracts
+
+@storage_var
+func rules_tokens_address_storage() -> (rules_cards_address: felt):
+end
+
+# Balances
+
+@storage_var
+func balances_storage(owner: felt, pack_id: Uint256) -> (balance: felt):
+end
+
 namespace PacksOpener:
 
   #
@@ -42,7 +58,7 @@ namespace PacksOpener:
       syscall_ptr : felt*,
       pedersen_ptr : HashBuiltin*,
       range_check_ptr
-    }(owner: felt):
+    }(owner: felt, _rules_tokens_address: felt):
     # assert not already initialized
     let (initialized) = contract_initialized.read()
     with_attr error_message("PacksOpener: contract already initialized"):
@@ -50,7 +66,12 @@ namespace PacksOpener:
     end
     contract_initialized.write(TRUE)
 
+    # ERC165 interfaces
     ERC165_register_interface(IERC1155_RECEIVER_ID)
+
+    # other contracts
+    rules_tokens_address_storage.write(_rules_tokens_address)
+
     return ()
   end
 
@@ -60,6 +81,17 @@ namespace PacksOpener:
 
   func get_version() -> (version: felt):
     return (version=VERSION)
+  end
+
+  # Other contracts
+
+  func rules_tokens{
+      syscall_ptr: felt*,
+      pedersen_ptr: HashBuiltin*,
+      range_check_ptr
+    }() -> (address: felt):
+    let (address) = rules_tokens_address_storage.read()
+    return (address)
   end
 
   #
@@ -85,19 +117,45 @@ namespace PacksOpener:
   # Business logic
   #
 
-  func takePackFrom{
+  func take_pack_from{
       syscall_ptr: felt*,
       pedersen_ptr: HashBuiltin*,
       range_check_ptr
-    }(packId: Uint256, _from: felt):
+    }(pack_id: Uint256, _from: felt):
+    alloc_locals
+
+    # assert pack exists
+    with_attr error_message("PacksOpener: Pack does not exist"):
+      assert pack_id.low * pack_id.high = 0
+    end
+
+    # transfer pack
+    let (self) = get_contract_address()
+    let (rules_tokens_address) = rules_tokens_address_storage.read()
+
+    let data = cast(0, felt*)
+    IRulesTokens.safeTransferFrom(
+      rules_tokens_address,
+      _from=_from,
+      to=self,
+      token_id=pack_id,
+      amount=Uint256(1, 0),
+      data_len=0,
+      data=data
+    )
+
+    # Increase balance
+    let (balance) = balances_storage.read(owner=_from, pack_id=pack_id)
+    balances_storage.write(owner=_from, pack_id=pack_id, value=balance + 1)
+
     return ()
   end
 
-  func openPackTo{
+  func open_pack_to{
       syscall_ptr: felt*,
       pedersen_ptr: HashBuiltin*,
       range_check_ptr
-    }(packId: Uint256, to: felt):
+    }(pack_id: Uint256, to: felt):
     return ()
   end
 
@@ -105,7 +163,7 @@ namespace PacksOpener:
   # ERC1155 Hooks
   #
 
-  func onERC1155Received{
+  func on_ERC1155_received{
       syscall_ptr: felt*,
       pedersen_ptr: HashBuiltin*,
       range_check_ptr
@@ -126,7 +184,7 @@ namespace PacksOpener:
     return (IERC1155_ACCEPTED_ID)
   end
 
-  func onERC1155BatchReceived{
+  func on_ERC1155_batch_received{
       syscall_ptr: felt*,
       pedersen_ptr: HashBuiltin*,
       range_check_ptr
