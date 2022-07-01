@@ -87,6 +87,17 @@ namespace PacksOpener:
     return (version=VERSION)
   end
 
+  # Balances
+
+  func balance_of{
+      syscall_ptr: felt*,
+      pedersen_ptr: HashBuiltin*,
+      range_check_ptr
+    }(account: felt, token_id: Uint256) -> (balance: Uint256):
+    let (balance) = balances_storage.read(account, token_id)
+    return (Uint256(balance, 0))
+  end
+
   # Other contracts
 
   func rules_tokens{
@@ -204,10 +215,10 @@ namespace PacksOpener:
     # only called via takePackFrom
     let (self) = get_contract_address()
     if operator == self:
-      return (0)
+      return (IERC1155_ACCEPTED_ID)
     end
 
-    return (IERC1155_ACCEPTED_ID)
+    return (0)
   end
 
   func on_ERC1155_batch_received{

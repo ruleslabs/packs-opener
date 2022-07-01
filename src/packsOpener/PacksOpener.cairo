@@ -139,6 +139,18 @@ func rulesTokens{
   return (address)
 end
 
+# Balances
+
+@view
+func balanceOf{
+    syscall_ptr: felt*,
+    pedersen_ptr: HashBuiltin*,
+    range_check_ptr
+  }(account: felt, token_id: Uint256) -> (balance: Uint256):
+  let (balance) = PacksOpener.balance_of(account, token_id)
+  return (balance)
+end
+
 #
 # Setters
 #

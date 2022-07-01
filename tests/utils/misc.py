@@ -40,8 +40,8 @@ def str_to_felt(text):
   return int.from_bytes(b_text, "big")
 
 
-def uint(a):
-  return a, 0
+def uint(a, b=0):
+  return a, b
 
 
 async def assert_revert(expression, expected_message=None, expected_code=None):

@@ -5,10 +5,8 @@ from types import SimpleNamespace
 
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starknet.definitions.error_codes import StarknetErrorCode
-from starkware.starknet.compiler.compile import get_selector_from_name
 
-from utils.Signer import Signer
-from utils.misc import deploy_proxy, assert_revert, str_to_felt, assert_event_emmited
+from utils.misc import deploy_proxy, assert_revert, uint, assert_event_emmited, str_to_felt
 from utils.TransactionSender import TransactionSender
 
 
@@ -16,20 +14,102 @@ VERSION = str_to_felt('0.1.0')
 
 
 @pytest.mark.asyncio
-async def test_take_and_open_pack(ctx_factory):
+async def test_take_pack(ctx_factory):
   ctx = ctx_factory()
-  manager_sender = TransactionSender(ctx.accounts.manager)
-  core_owner_sender = TransactionSender(ctx.accounts.core_owner)
+  manager_sender = TransactionSender(ctx.manager, ctx.signers['manager'])
+  owner_sender = TransactionSender(ctx.owner, ctx.signers['owner'])
 
-  assert 1 == 1
+  # mint packs
+  await owner_sender.send_transaction([
+    (
+      ctx.rules_tokens.contract_address,
+      'mintPack',
+      [*uint(1), ctx.rando1.contract_address, 2, ctx.packs_opener.contract_address],
+    ),
+  ])
 
-  # # should revert with the wrong signer
-  # await assert_revert(
-  #   sender.send_transaction([(dapp.contract_address, 'set_number', [47])], wrong_signer),
-  #   'Account: invalid signer signature'
-  # )
-  #
-  # # should call the dapp
-  # assert (await dapp.get_number(account.contract_address).call()).result.number == 0
-  # await sender.send_transaction([(dapp.contract_address, 'set_number', [47])], signer)
-  # assert (await dapp.get_number(account.contract_address).call()).result.number == 47
+  await manager_sender.send_transaction([
+    (ctx.packs_opener.contract_address, 'takePackFrom', [ctx.rando1.contract_address, *uint(1)]),
+    (ctx.packs_opener.contract_address, 'takePackFrom', [ctx.rando1.contract_address, *uint(1)]),
+  ]),
+
+  assert (await ctx.packs_opener.balanceOf(ctx.rando1.contract_address, uint(1)).call()).result.balance == uint(2)
+  assert (await ctx.rules_tokens.balanceOf(ctx.rando1.contract_address, uint(1)).call()).result.balance == uint(0)
+
+
+@pytest.mark.asyncio
+async def test_invlid_take_pack(ctx_factory):
+  ctx = ctx_factory()
+  manager_sender = TransactionSender(ctx.manager, ctx.signers['manager'])
+  owner_sender = TransactionSender(ctx.owner, ctx.signers['owner'])
+  rando1_sender = TransactionSender(ctx.rando1, ctx.signers['rando1'])
+
+  # mint packs
+  await owner_sender.send_transaction([
+    (
+      ctx.rules_tokens.contract_address,
+      'mintPack',
+      [*uint(1), ctx.rando1.contract_address, 1, ctx.packs_opener.contract_address],
+    ),
+  ])
+
+  # should revert without packs
+  await assert_revert(
+    owner_sender.send_transaction([
+      (ctx.packs_opener.contract_address, 'takePackFrom', [ctx.rando2.contract_address, *uint(1)]),
+    ]),
+    'ERC1155: either is not approved or the caller is the zero address',
+  )
+
+  # should revert with wrong caller
+  await assert_revert(
+    rando1_sender.send_transaction([
+      (ctx.packs_opener.contract_address, 'takePackFrom', [ctx.rando1.contract_address, *uint(1)]),
+    ]),
+    'AccessControl: only managers are authorized to perform this action',
+  )
+
+  # should revert with wrong pack_id
+  await assert_revert(
+    owner_sender.send_transaction([
+      (ctx.packs_opener.contract_address, 'takePackFrom', [ctx.rando1.contract_address, *uint(1, 1)]),
+    ]),
+    'PacksOpener: Pack does not exist',
+  )
+
+
+@pytest.mark.asyncio
+async def test_on_receive_packs(ctx_factory):
+  ctx = ctx_factory()
+  manager_sender = TransactionSender(ctx.manager, ctx.signers['manager'])
+  owner_sender = TransactionSender(ctx.owner, ctx.signers['owner'])
+  rando1_sender = TransactionSender(ctx.rando1, ctx.signers['rando1'])
+
+  # mint packs
+  await owner_sender.send_transaction([
+    (
+      ctx.rules_tokens.contract_address,
+      'mintPack',
+      [*uint(1), ctx.rando1.contract_address, 2, ctx.packs_opener.contract_address],
+    ),
+  ])
+
+  # should revert on receive
+  await assert_revert(
+    rando1_sender.send_transaction([
+      (
+        ctx.rules_tokens.contract_address,
+        'safeTransferFrom',
+        [ctx.rando1.contract_address, ctx.packs_opener.contract_address, *uint(1), *uint(1), 1, 0],
+      ),
+    ]),
+  )
+
+  # should work with another recipient
+  await rando1_sender.send_transaction([
+    (
+      ctx.rules_tokens.contract_address,
+      'safeTransferFrom',
+      [ctx.rando1.contract_address, ctx.rando2.contract_address, *uint(1), *uint(1), 1, 0],
+    ),
+  ]),

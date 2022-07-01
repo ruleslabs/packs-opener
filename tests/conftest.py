@@ -215,6 +215,7 @@ async def ctx_factory(copyable_deployment):
 
     return SimpleNamespace(
       starknet=Starknet(starknet_state),
+      signers=signers,
       **accounts,
       **contracts
     )
