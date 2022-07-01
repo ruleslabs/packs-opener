@@ -1,7 +1,10 @@
 %lang starknet
 
-from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
+
+from ruleslabs.models.metadata import Metadata
+from ruleslabs.models.card import Card
 
 # Libraries
 
@@ -182,9 +185,9 @@ func takePackFrom{
     syscall_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
     range_check_ptr
-  }(packId: Uint256, _from: felt):
+  }(_from: felt, packId: Uint256):
   Opener_only_opener()
-  PacksOpener.take_pack_from(packId, _from)
+  PacksOpener.take_pack_from(_from, packId)
   return ()
 end
 
@@ -192,10 +195,11 @@ end
 func openPackTo{
     syscall_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
+    bitwise_ptr: BitwiseBuiltin*,
     range_check_ptr
-  }(packId: Uint256, to: felt):
+  }(to: felt, pack_id: Uint256, cards_len: felt, cards: Card*, metadata_len: felt, metadata: Metadata*):
   Opener_only_opener()
-  PacksOpener.open_pack_to(packId, to)
+  PacksOpener.open_pack_to(to, pack_id, cards_len, cards, metadata_len, metadata)
   return ()
 end
 

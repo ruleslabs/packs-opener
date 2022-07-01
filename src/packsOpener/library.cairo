@@ -1,12 +1,16 @@
 %lang starknet
 
 from starkware.cairo.common.bool import TRUE, FALSE
-from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.math import assert_not_zero
 from starkware.starknet.common.syscalls import (
   call_contract, get_contract_address
 )
+
+from ruleslabs.models.metadata import Metadata
+from ruleslabs.models.card import Card
+
 #
 # Libraries
 #
@@ -121,7 +125,7 @@ namespace PacksOpener:
       syscall_ptr: felt*,
       pedersen_ptr: HashBuiltin*,
       range_check_ptr
-    }(pack_id: Uint256, _from: felt):
+    }(_from: felt, pack_id: Uint256):
     alloc_locals
 
     # assert pack exists
@@ -154,8 +158,30 @@ namespace PacksOpener:
   func open_pack_to{
       syscall_ptr: felt*,
       pedersen_ptr: HashBuiltin*,
+      bitwise_ptr: BitwiseBuiltin*,
       range_check_ptr
-    }(pack_id: Uint256, to: felt):
+    }(to: felt, pack_id: Uint256, cards_len: felt, cards: Card*, metadata_len: felt, metadata: Metadata*):
+    alloc_locals
+
+    # Ensure balance is not null and decrease it
+    let (balance) = balances_storage.read(owner=to, pack_id=pack_id)
+    with_attr error_message("PacksOpener: null balance for this pack"):
+      assert_not_zero(balance)
+    end
+    balances_storage.write(owner=to, pack_id=pack_id, value=balance - 1)
+
+    # open pack
+    let (rules_tokens_address) = rules_tokens_address_storage.read()
+    IRulesTokens.openPackTo(
+      rules_tokens_address,
+      to,
+      pack_id,
+      cards_len,
+      cards,
+      metadata_len,
+      metadata,
+    )
+
     return ()
   end
 
