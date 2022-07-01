@@ -10,7 +10,8 @@ from starkware.starknet.compiler.compile import get_selector_from_name
 
 from utils.Signer import Signer
 from utils.misc import (
-  declare, deploy_proxy, serialize_contract, unserialize_contract, set_block_timestamp, uint, str_to_felt
+  declare, deploy_proxy, serialize_contract, unserialize_contract,
+  set_block_timestamp, uint, str_to_felt, to_starknet_args,
 )
 from utils.TransactionSender import TransactionSender
 
@@ -19,6 +20,16 @@ from utils.TransactionSender import TransactionSender
 sys.stdout = sys.stderr
 
 initialize_selector = get_selector_from_name('initialize')
+
+artist1 = uint(str_to_felt('artist1'))
+artist2 = uint(str_to_felt('artist2'))
+artist3 = uint(str_to_felt('artist3'))
+
+cardModel1 = (artist1, 1, 0) # (artist, season, scarcity)
+cardModel2 = (artist2, 1, 0)
+cardModel3 = (artist3, 1, 0)
+
+metadata = (1, 1, 0x1220)
 
 
 @pytest.fixture(scope='session')
@@ -133,16 +144,7 @@ async def build_copyable_deployment():
     (packs_opener.contract_address, 'addManager', [accounts.manager.contract_address]),
   ])
 
-  # Create artists
-  artist1 = uint(str_to_felt('artist1'))
-  artist2 = uint(str_to_felt('artist2'))
-  artist3 = uint(str_to_felt('artist3'))
-
-  cardModel1 = (*artist1, 1, 0) # (artist, season, scarcity)
-  cardModel2 = (*artist2, 1, 0)
-  cardModel3 = (*artist3, 1, 0)
-
-  metadata = (1, 1, 0x1220)
+  # Create artists/pack
 
   await owner_sender.send_transaction([
     (rules_data.contract_address, 'createArtist', [*artist1]),
@@ -152,11 +154,11 @@ async def build_copyable_deployment():
     (rules_packs.contract_address, 'createPack', [
       3, # cards per pack
       3, # card models len
-      *cardModel1,
+      *to_starknet_args(cardModel1),
       3, # quantity
-      *cardModel2,
+      *to_starknet_args(cardModel2),
       3, # quantity
-      *cardModel3,
+      *to_starknet_args(cardModel3),
       3, # quantity
       *metadata,
     ]),

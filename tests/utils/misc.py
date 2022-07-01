@@ -17,6 +17,23 @@ from starkware.starknet.business_logic.state.state import BlockInfo
 _root = Path(__file__).parent.parent.parent
 
 
+def to_starknet_args(data):
+  items = []
+  values = data.values() if type(data) is dict else data
+  for d in values:
+    if type(d) is dict:
+      items.extend([*to_starknet_args(d)])
+    elif type(d) is tuple:
+      items.extend([*to_starknet_args(d)])
+    elif type(d) is list:
+      items.append(len(d))
+      items.extend([*to_starknet_args(tuple(d))])
+    else:
+      items.append(d)
+
+  return tuple(items)
+
+
 def get_contract_class(path):
   """Returns the contract class from src or libraries"""
   if path.startswith("periphery/"):
