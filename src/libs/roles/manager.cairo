@@ -14,18 +14,18 @@ from ruleslabs.lib.roles.AccessControl_base import (
 
 # Constants
 
-const OPENER_ROLE = 0x44F50454E45525F524F4C45 # "OPENER_ROLE"
+const MANAGER_ROLE = 0x4D414E414745525F524F4C45 # "MANAGER_ROLE"
 
 #
 # Constructor
 #
 
-func Opener_initializer{
+func Manager_initializer{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(admin: felt):
-  _grant_role(OPENER_ROLE, admin)
+  _grant_role(MANAGER_ROLE, admin)
   return ()
 end
 
@@ -33,42 +33,42 @@ end
 # Getters
 #
 
-func Opener_role{}() -> (role: felt):
-  return (OPENER_ROLE)
+func Manager_role{}() -> (role: felt):
+  return (MANAGER_ROLE)
 end
 
 #
 # Externals
 #
 
-func Opener_only_opener{
+func Manager_only_manager{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }():
   let (caller) = get_caller_address()
-  let (has_role) = AccessControl_has_role(OPENER_ROLE, caller)
-  with_attr error_message("AccessControl: only openers are authorized to perform this action"):
+  let (has_role) = AccessControl_has_role(MANAGER_ROLE, caller)
+  with_attr error_message("AccessControl: only managers are authorized to perform this action"):
     assert has_role = TRUE
   end
 
   return ()
 end
 
-func Opener_grant{
+func Manager_grant{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr
   }(account: felt):
-  AccessControl_grant_role(OPENER_ROLE, account)
+  AccessControl_grant_role(MANAGER_ROLE, account)
   return ()
 end
 
-func Opener_revoke{
+func Manager_revoke{
     syscall_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
     range_check_ptr
   }(account: felt) -> ():
-  AccessControl_revoke_role(OPENER_ROLE, account)
+  AccessControl_revoke_role(MANAGER_ROLE, account)
   return ()
 end

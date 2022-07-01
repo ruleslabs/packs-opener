@@ -20,13 +20,13 @@ from ruleslabs.lib.Ownable_base import (
   Ownable_transfer_ownership,
 )
 
-from libs.roles.opener import (
-  Opener_role,
+from libs.roles.manager import (
+  Manager_role,
 
-  Opener_initializer,
-  Opener_only_opener,
-  Opener_grant,
-  Opener_revoke,
+  Manager_initializer,
+  Manager_only_manager,
+  Manager_grant,
+  Manager_revoke,
 )
 
 from ruleslabs.lib.roles.AccessControl_base import (
@@ -49,7 +49,7 @@ func initialize{
   }(owner: felt, _rules_tokens_address: felt):
   Ownable_initializer(owner)
   AccessControl_initializer(owner)
-  Opener_initializer(owner)
+  Manager_initializer(owner)
 
   PacksOpener.initializer(owner, _rules_tokens_address)
   return ()
@@ -67,7 +67,7 @@ func OPENER_ROLE{
     pedersen_ptr: HashBuiltin*,
     range_check_ptr
   }() -> (role: felt):
-  let (role) = Opener_role()
+  let (role) = Manager_role()
   return (role)
 end
 
@@ -146,22 +146,22 @@ end
 # Roles
 
 @external
-func addOpener{
+func addManager{
     syscall_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
     range_check_ptr
   }(account: felt):
-  Opener_grant(account)
+  Manager_grant(account)
   return ()
 end
 
 @external
-func revokeOpener{
+func revokeManager{
     syscall_ptr: felt*,
     pedersen_ptr: HashBuiltin*,
     range_check_ptr
   }(account: felt):
-  Opener_revoke(account)
+  Manager_revoke(account)
   return ()
 end
 
@@ -186,7 +186,7 @@ func takePackFrom{
     pedersen_ptr: HashBuiltin*,
     range_check_ptr
   }(_from: felt, packId: Uint256):
-  Opener_only_opener()
+  Manager_only_manager()
   PacksOpener.take_pack_from(_from, packId)
   return ()
 end
@@ -198,7 +198,7 @@ func openPackTo{
     bitwise_ptr: BitwiseBuiltin*,
     range_check_ptr
   }(to: felt, pack_id: Uint256, cards_len: felt, cards: Card*, metadata_len: felt, metadata: Metadata*):
-  Opener_only_opener()
+  Manager_only_manager()
   PacksOpener.open_pack_to(to, pack_id, cards_len, cards, metadata_len, metadata)
   return ()
 end
