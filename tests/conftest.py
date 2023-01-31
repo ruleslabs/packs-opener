@@ -131,7 +131,7 @@ async def build_copyable_deployment():
   )
 
   # Access control
-  owner_sender = TransactionSender(accounts.owner, signers['owner'])
+  owner_sender = TransactionSender(accounts.owner)
 
   await owner_sender.send_transaction([
     (rules_cards.contract_address, 'addMinter', [rules_tokens.contract_address]),
@@ -142,7 +142,7 @@ async def build_copyable_deployment():
     (rules_tokens.contract_address, 'addMinter', [packs_opener.contract_address]),
 
     (packs_opener.contract_address, 'addManager', [accounts.manager.contract_address]),
-  ])
+  ], signers['owner'])
 
   # Create artists/pack
 
@@ -162,7 +162,7 @@ async def build_copyable_deployment():
       3, # quantity
       *metadata,
     ]),
-  ])
+  ], signers['owner'])
 
   return SimpleNamespace(
     starknet=starknet,

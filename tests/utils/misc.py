@@ -100,7 +100,7 @@ async def deploy_proxy(starknet, abi, params=None):
     state=starknet.state,
     abi=abi,
     contract_address=deployed_proxy.contract_address,
-    deploy_execution_info=deployed_proxy.deploy_execution_info
+    deploy_call_info=deployed_proxy.deploy_call_info
   )
 
   return wrapped_proxy
@@ -110,7 +110,7 @@ def serialize_contract(contract, abi):
   return dict(
     abi=abi,
     contract_address=contract.contract_address,
-    deploy_execution_info=contract.deploy_execution_info
+    deploy_call_info=contract.deploy_call_info
   )
 
 
